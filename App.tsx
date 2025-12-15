@@ -20,7 +20,12 @@ const App: React.FC = () => {
           setScore={setScore}
           setHp={setHp}
         />
-        <UI gameState={gameState} score={score} hp={hp} />
+        <UI 
+          gameState={gameState} 
+          score={score} 
+          hp={hp} 
+          setGameState={setGameState}
+        />
       </div>
       
       {/* Background decorations for wide screens */}

@@ -6,9 +6,10 @@ interface UIProps {
   gameState: GameState;
   score: number;
   hp?: number; // Optional prop as it's not needed in Menu
+  setGameState: (state: GameState) => void;
 }
 
-const UI: React.FC<UIProps> = ({ gameState, score, hp = 100 }) => {
+const UI: React.FC<UIProps> = ({ gameState, score, hp = 100, setGameState }) => {
   // Render Hearts based on HP (20HP = 1 Heart)
   const renderHearts = () => {
     const totalHearts = 5;
@@ -74,9 +75,12 @@ const UI: React.FC<UIProps> = ({ gameState, score, hp = 100 }) => {
             COLLECT <span className="text-pink-500">♥</span> TO RESTORE INTEGRITY.
           </p>
           <div className="animate-bounce">
-            <span className="inline-block px-6 py-2 bg-cyan-600 text-black font-bold text-xl uppercase tracking-widest cursor-pointer hover:bg-cyan-400">
-              Press Space to Launch
-            </span>
+            <button 
+              onClick={() => setGameState(GameState.PLAYING)}
+              className="inline-block px-6 py-2 bg-cyan-600 text-black font-bold text-xl uppercase tracking-widest cursor-pointer hover:bg-cyan-400 focus:outline-none"
+            >
+              TAP OR PRESS SPACE TO LAUNCH
+            </button>
           </div>
         </div>
       </div>
@@ -94,9 +98,12 @@ const UI: React.FC<UIProps> = ({ gameState, score, hp = 100 }) => {
             <p className="text-gray-400 text-sm">FINAL SCORE</p>
             <p className="text-5xl font-mono text-white">{Math.floor(score).toString().padStart(6, '0')}</p>
           </div>
-          <span className="inline-block px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-black font-bold text-xl uppercase tracking-widest cursor-pointer transition-colors">
-            Press Space to Retry
-          </span>
+          <button 
+            onClick={() => setGameState(GameState.PLAYING)}
+            className="inline-block px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-black font-bold text-xl uppercase tracking-widest cursor-pointer transition-colors focus:outline-none"
+          >
+            TAP OR PRESS SPACE TO RETRY
+          </button>
         </div>
       </div>
     );

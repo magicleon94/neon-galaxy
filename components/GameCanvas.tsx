@@ -5,13 +5,13 @@ import {
   CANVAS_HEIGHT, 
   COLORS, 
   PLAYER_SPEED, 
-  PLAYER_WIDTH,
-  PLAYER_HEIGHT,
+  PLAYER_WIDTH, 
+  PLAYER_HEIGHT, 
   PLAYER_HP,
-  BULLET_SPEED,
-  ENEMY_BULLET_SPEED,
-  SHOOT_COOLDOWN,
-  ENEMY_STATS,
+  BULLET_SPEED, 
+  ENEMY_BULLET_SPEED, 
+  SHOOT_COOLDOWN, 
+  ENEMY_STATS, 
   SPAWN_RATE_BASE,
   HEART_DROP_CHANCE,
   HEART_VALUE,
@@ -506,6 +506,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
                 player.invulnerableTime = 30;
                 createExplosion(player.x + player.width/2, player.y + player.height/2, COLORS.neonRed, 10, 5);
                 Audio.playExplosion();
+                if (navigator.vibrate) navigator.vibrate(200); // Haptic Impact
             }
         });
 
@@ -517,6 +518,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
                  playerHit = true;
                  player.invulnerableTime = 0; // Continuous damage
                  createExplosion(player.x + Math.random()*player.width, player.y + player.height/2, COLORS.neonRed, 2, 5);
+                 if (frameCountRef.current % 10 === 0 && navigator.vibrate) navigator.vibrate(50); // Haptic Buzz
             }
         });
 
@@ -529,6 +531,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
                 enemy.hp -= 50; // Ram damage
                 Audio.playCrash();
                 createExplosion((player.x + enemy.x)/2, (player.y + enemy.y)/2, '#fff', 20, 10);
+                if (navigator.vibrate) navigator.vibrate(400); // Heavy Haptic
             }
         });
         
