@@ -12,8 +12,17 @@ export const SHOOT_COOLDOWN = 120; // ms
 
 // Powerups
 export const HEART_VALUE = 20;
-export const HEART_DROP_CHANCE = 0.2; // 20%
 export const POWERUP_SPEED = 3;
+
+// Durations in frames (assuming 60fps)
+export const SHIELD_DURATION = 300; // 5 seconds
+export const MULTISHOT_DURATION = 600; // 10 seconds
+
+// Drop Chances (cumulative checks)
+export const DROP_CHANCE_HEART = 0.15;
+export const DROP_CHANCE_SHIELD = 0.03;
+export const DROP_CHANCE_MULTISHOT = 0.03;
+export const DROP_CHANCE_BOMB = 0.02;
 
 // Enemy Constants
 export const SPAWN_RATE_BASE = 100;
@@ -33,6 +42,7 @@ export const COLORS = {
   neonYellow: '#fcee0a',
   neonGreen: '#0aff0a',
   neonRed: '#ff0033',
+  neonOrange: '#ffaa00',
   grid: '#1a1a2e',
   text: '#ffffff'
 };

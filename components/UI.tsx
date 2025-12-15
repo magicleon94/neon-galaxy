@@ -5,15 +5,26 @@ import { COLORS } from '../constants';
 interface UIProps {
   gameState: GameState;
   score: number;
-  hp?: number; // Optional prop as it's not needed in Menu
+  hp?: number;
+  shieldTime?: number;
+  multishotTime?: number;
   setGameState: (state: GameState) => void;
   isMobile: boolean;
+  screenshot?: Blob | null;
 }
 
-const UI: React.FC<UIProps> = ({ gameState, score, hp = 100, setGameState, isMobile }) => {
+const UI: React.FC<UIProps> = ({ 
+  gameState, 
+  score, 
+  hp = 100, 
+  shieldTime = 0, 
+  multishotTime = 0, 
+  setGameState, 
+  isMobile,
+  screenshot
+}) => {
   
   const handleStart = () => {
-    // Attempt to enter fullscreen on start interaction
     const elem = document.documentElement;
     if (elem.requestFullscreen) {
       elem.requestFullscreen().catch((err) => {
@@ -26,7 +37,38 @@ const UI: React.FC<UIProps> = ({ gameState, score, hp = 100, setGameState, isMob
     setGameState(GameState.PLAYING);
   };
 
-  // Render Hearts based on HP (20HP = 1 Heart)
+  const handleShare = async () => {
+    const text = `I scored ${Math.floor(score)}, challenge me at neon-galaxy.vercel.app`;
+    
+    if (navigator.share) {
+        try {
+            const shareData: any = {
+                title: 'Neon Galaxy Score',
+                text: text,
+            };
+
+            // Attempt to attach screenshot if available
+            if (screenshot) {
+                const file = new File([screenshot], 'neongalaxy-score.png', { type: 'image/png' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    shareData.files = [file];
+                } else {
+                    // If files not supported, append URL
+                    shareData.url = 'https://neon-galaxy.vercel.app';
+                }
+            } else {
+                shareData.url = 'https://neon-galaxy.vercel.app';
+            }
+            
+            await navigator.share(shareData);
+        } catch (err) {
+            console.error('Share failed', err);
+        }
+    } else {
+        alert('Sharing not supported on this browser.');
+    }
+  };
+
   const renderHearts = () => {
     const totalHearts = 5;
     const currentHearts = Math.ceil(hp / 20);
@@ -59,18 +101,35 @@ const UI: React.FC<UIProps> = ({ gameState, score, hp = 100, setGameState, isMob
             </div>
         </div>
 
-        {/* Score */}
-        <div className="flex flex-col items-end">
-             <span className="text-cyan-400 text-xs tracking-widest">SCORE</span>
-             <h2 
-                className="text-4xl font-black italic tracking-widest"
-                style={{ 
-                    color: COLORS.neonYellow, 
-                    textShadow: `2px 2px 0px ${COLORS.neonPink}` 
-                }}
-            >
-                {Math.floor(score).toString().padStart(6, '0')}
-            </h2>
+        {/* Right HUD: Score & Powerups */}
+        <div className="flex flex-col items-end gap-2">
+             <div className="flex flex-col items-end">
+                <span className="text-cyan-400 text-xs tracking-widest">SCORE</span>
+                <h2 
+                    className="text-4xl font-black italic tracking-widest"
+                    style={{ 
+                        color: COLORS.neonYellow, 
+                        textShadow: `2px 2px 0px ${COLORS.neonPink}` 
+                    }}
+                >
+                    {Math.floor(score).toString().padStart(6, '0')}
+                </h2>
+             </div>
+
+             {/* Powerup Timers */}
+             {shieldTime > 0 && (
+                 <div className="flex items-center bg-cyan-900/50 px-3 py-1 rounded border border-cyan-500 animate-pulse">
+                     <span className="font-bold text-cyan-400 text-sm mr-2">SHIELD</span>
+                     <span className="font-mono text-white text-lg">{shieldTime}s</span>
+                 </div>
+             )}
+             
+             {multishotTime > 0 && (
+                 <div className="flex items-center bg-green-900/50 px-3 py-1 rounded border border-green-500">
+                     <span className="font-bold text-green-400 text-sm mr-2">MULTI</span>
+                     <span className="font-mono text-white text-lg">{multishotTime}s</span>
+                 </div>
+             )}
         </div>
       </div>
     );
@@ -118,12 +177,24 @@ const UI: React.FC<UIProps> = ({ gameState, score, hp = 100, setGameState, isMob
             <p className="text-gray-400 text-sm">FINAL SCORE</p>
             <p className="text-5xl font-mono text-white">{Math.floor(score).toString().padStart(6, '0')}</p>
           </div>
-          <button 
-            onClick={handleStart}
-            className="inline-block px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-black font-bold text-xl uppercase tracking-widest cursor-pointer transition-colors focus:outline-none"
-          >
-             {isMobile ? "TAP TO RETRY" : "TAP OR PRESS SPACE TO RETRY"}
-          </button>
+          
+          <div className="flex flex-col gap-4">
+              <button 
+                onClick={handleStart}
+                className="inline-block px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-black font-bold text-xl uppercase tracking-widest cursor-pointer transition-colors focus:outline-none"
+              >
+                 {isMobile ? "TAP TO RETRY" : "TAP OR PRESS SPACE TO RETRY"}
+              </button>
+
+              {isMobile && (
+                <button
+                    onClick={handleShare}
+                    className="inline-block px-6 py-2 bg-blue-600 text-white font-bold text-sm uppercase tracking-widest cursor-pointer hover:bg-blue-500 transition-colors focus:outline-none shadow-[0_0_10px_rgba(0,100,255,0.5)]"
+                >
+                    SHARE SCORE
+                </button>
+              )}
+          </div>
         </div>
       </div>
     );

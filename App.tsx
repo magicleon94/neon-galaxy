@@ -10,6 +10,13 @@ const App: React.FC = () => {
   const [score, setScore] = useState<number>(0);
   const [hp, setHp] = useState<number>(PLAYER_HP);
   
+  // PowerUp States (Time remaining in seconds for UI)
+  const [shieldTime, setShieldTime] = useState<number>(0);
+  const [multishotTime, setMultishotTime] = useState<number>(0);
+
+  // Sharing State
+  const [screenshot, setScreenshot] = useState<Blob | null>(null);
+  
   // Device & PWA State
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isStandalone, setIsStandalone] = useState<boolean>(false);
@@ -19,9 +26,6 @@ const App: React.FC = () => {
   useEffect(() => {
     // 1. Check if Mobile (Touch device)
     const checkMobile = () => {
-      // Check for touch capability and screen size/agent to avoid desktop touch screens getting the install prompt (unless desired)
-      // Simpler approach: Touch points + rudimentary agent check or just touch points.
-      // Keeping it simple as requested:
       setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
     };
 
@@ -75,14 +79,20 @@ const App: React.FC = () => {
           score={score} 
           setScore={setScore}
           setHp={setHp}
+          setShieldTime={setShieldTime}
+          setMultishotTime={setMultishotTime}
           isMobile={isMobile}
+          setScreenshot={setScreenshot}
         />
         <UI 
           gameState={gameState} 
           score={score} 
           hp={hp} 
+          shieldTime={shieldTime}
+          multishotTime={multishotTime}
           setGameState={setGameState}
           isMobile={isMobile}
+          screenshot={screenshot}
         />
       </div>
       

@@ -16,6 +16,8 @@ export interface Player {
   lastShotTime: number;
   color: string;
   invulnerableTime: number;
+  shieldTime: number;    // Time remaining for Shield powerup
+  multishotTime: number; // Time remaining for Multishot powerup
 }
 
 export type EnemyType = 'SCOUT' | 'FIGHTER' | 'DESTROYER' | 'PILOT';
@@ -69,6 +71,8 @@ export interface Particle {
   size: number;
 }
 
+export type PowerUpType = 'HEART' | 'SHIELD' | 'BOMB' | 'MULTISHOT';
+
 export interface PowerUp {
   id: number;
   x: number;
@@ -76,5 +80,5 @@ export interface PowerUp {
   width: number;
   height: number;
   vx: number;
-  type: 'HEART';
+  type: PowerUpType;
 }
