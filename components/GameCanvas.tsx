@@ -42,6 +42,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
   const fireRef = useRef(false);
   const [stickOffset, setStickOffset] = useState({ x: 0, y: 0 });
 
+  // Visual Effects
+  const shakeRef = useRef<number>(0);
+
   // Game Entities
   const playerRef = useRef<Player>({
     x: 100,
@@ -100,6 +103,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
     powerUpsRef.current = [];
     scoreRef.current = 0;
     frameCountRef.current = 0;
+    shakeRef.current = 0;
     setScore(0);
     setHp(PLAYER_HP);
     initStars();
@@ -208,6 +212,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
         });
     }
   };
+  
+  const triggerImpact = (intensity: number) => {
+      shakeRef.current = intensity;
+      // Try native vibration if available (Android)
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(intensity * 10);
+      }
+  };
 
   // --------------------------------------------------------------------------
   // GAME LOOP
@@ -218,6 +230,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
     frameCountRef.current++;
     const player = playerRef.current;
     const now = Date.now();
+    
+    // Reduce shake
+    if (shakeRef.current > 0) {
+        shakeRef.current *= 0.9;
+        if (shakeRef.current < 0.5) shakeRef.current = 0;
+    }
 
     // 1. Player Movement (WASD + Joystick)
     let dx = 0;
@@ -506,7 +524,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
                 player.invulnerableTime = 30;
                 createExplosion(player.x + player.width/2, player.y + player.height/2, COLORS.neonRed, 10, 5);
                 Audio.playExplosion();
-                if (navigator.vibrate) navigator.vibrate(200); // Haptic Impact
+                triggerImpact(20); // VISUAL + HAPTIC
             }
         });
 
@@ -518,7 +536,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
                  playerHit = true;
                  player.invulnerableTime = 0; // Continuous damage
                  createExplosion(player.x + Math.random()*player.width, player.y + player.height/2, COLORS.neonRed, 2, 5);
-                 if (frameCountRef.current % 10 === 0 && navigator.vibrate) navigator.vibrate(50); // Haptic Buzz
+                 if (frameCountRef.current % 10 === 0) triggerImpact(5);
             }
         });
 
@@ -531,7 +549,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
                 enemy.hp -= 50; // Ram damage
                 Audio.playCrash();
                 createExplosion((player.x + enemy.x)/2, (player.y + enemy.y)/2, '#fff', 20, 10);
-                if (navigator.vibrate) navigator.vibrate(400); // Heavy Haptic
+                triggerImpact(30); // HEAVY IMPACT
             }
         });
         
@@ -573,6 +591,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Apply Shake
+    const shakeX = (Math.random() - 0.5) * shakeRef.current;
+    const shakeY = (Math.random() - 0.5) * shakeRef.current;
+    
+    // Apply shake to the canvas element itself for a better effect, or use ctx.translate
+    // Using style transform is more performant for full-canvas shake vs redrawing everything offset
+    canvas.style.transform = `translate(${shakeX}px, ${shakeY}px)`;
 
     // Clear
     ctx.fillStyle = COLORS.background;

@@ -10,7 +10,7 @@ const App: React.FC = () => {
   const [hp, setHp] = useState<number>(PLAYER_HP);
 
   return (
-    <div className="relative w-screen h-screen flex flex-col items-center justify-center bg-gray-900 overflow-hidden">
+    <div className="relative w-screen h-[100dvh] flex flex-col items-center justify-center bg-gray-900 overflow-hidden select-none touch-none">
       {/* Container ensures aspect ratio is maintained or fits screen */}
       <div className="relative w-full h-full max-w-[1200px] max-h-[600px] shadow-2xl">
         <GameCanvas 
