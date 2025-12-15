@@ -31,7 +31,9 @@ export const ENEMY_STATS = {
   SCOUT: { width: 40, height: 30, hp: 20, score: 100, color: '#fcee0a' }, // Single shot
   FIGHTER: { width: 50, height: 40, hp: 40, score: 300, color: '#ff00ff' }, // Tri-shot, spawns pilot
   DESTROYER: { width: 80, height: 60, hp: 150, score: 1000, color: '#ff0000' }, // Laser
-  PILOT: { width: 20, height: 20, hp: 1, score: 500, color: '#ffffff' } // Throws bomb
+  PILOT: { width: 20, height: 20, hp: 1, score: 500, color: '#ffffff' }, // Throws bomb
+  KAMIKAZE: { width: 60, height: 25, hp: 60, score: 400, color: '#ffaa00' }, // Orange, fast, ejects
+  PARATROOPER: { width: 30, height: 50, hp: 10, score: 200, color: '#00ffaa' } // Slow fall, shoots
 };
 
 // Cyberpunk Palette

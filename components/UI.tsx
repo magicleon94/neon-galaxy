@@ -25,15 +25,7 @@ const UI: React.FC<UIProps> = ({
 }) => {
   
   const handleStart = () => {
-    const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen().catch((err) => {
-        console.log(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    } else if ((elem as any).webkitRequestFullscreen) { /* Safari */
-      (elem as any).webkitRequestFullscreen();
-    }
-    
+    // Fullscreen request removed as PWA mode handles layout better on mobile
     setGameState(GameState.PLAYING);
   };
 

@@ -212,7 +212,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         type: type,
         lastAttackTime: 0,
         state: 'ENTERING',
-        targetY: y
+        targetY: y,
+        rotation: 0,
+        vx: 0,
+        vy: 0,
+        shootOffset: Math.floor(Math.random() * 120) // Randomize firing phase
     });
   };
 
@@ -334,6 +338,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         
         let type: EnemyType = 'SCOUT';
         if (scoreRef.current > 500 && rand > 0.6) type = 'FIGHTER';
+        if (scoreRef.current > 1000 && rand > 0.8) type = 'KAMIKAZE';
         if (scoreRef.current > 1500 && rand > 0.9) type = 'DESTROYER';
 
         spawnEnemy(type, CANVAS_WIDTH + 50, spawnY);
@@ -342,6 +347,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     // 3. Enemy AI
     enemiesRef.current.forEach(enemy => {
         const targetX = CANVAS_WIDTH - 200 - (enemy.id % 200); 
+        const shootOffset = enemy.shootOffset || 0;
         
         if (enemy.type === 'PILOT') {
             if (enemy.state === 'ENTERING') {
@@ -368,7 +374,82 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                 enemy.y -= 2;
                 if (enemy.x > CANVAS_WIDTH + 50) enemy.hp = 0;
             }
+        } else if (enemy.type === 'KAMIKAZE') {
+             if (enemy.state === 'CRASHING') {
+                 // Abandoned ship behavior - keeps momentum but falls
+                 enemy.x -= 15; // Fast forward
+                 enemy.y += 3; // Fall
+                 enemy.rotation = (enemy.rotation || 0) + 0.1;
+                 
+                 // If it goes off screen, destroy it silently
+                 if (enemy.y > CANVAS_HEIGHT + 100) enemy.hp = 0;
+             } else {
+                 // Rush player (faster now)
+                 enemy.x -= 15;
+                 enemy.y += (player.y - enemy.y) * 0.05;
+
+                 // Eject Condition
+                 if (enemy.x - player.x < 400 && enemy.x > player.x) {
+                     enemy.state = 'CRASHING';
+                     Audio.playCrash(); // Sound effect for eject/malfunction
+                     
+                     // Spawn Paratrooper
+                     const stats = ENEMY_STATS.PARATROOPER;
+                     enemiesRef.current.push({
+                        id: Date.now() + Math.random(),
+                        x: enemy.x,
+                        y: enemy.y - 20,
+                        width: stats.width,
+                        height: stats.height,
+                        hp: stats.hp,
+                        maxHp: stats.hp,
+                        type: 'PARATROOPER',
+                        lastAttackTime: 0,
+                        state: 'ATTACKING',
+                        rotation: 0,
+                        vx: -3,
+                        vy: -10, // EJECT UPWARDS
+                        shootOffset: Math.floor(Math.random() * 120)
+                     });
+                 }
+             }
+        } else if (enemy.type === 'PARATROOPER') {
+            // Apply physics
+            // Gravity on vy, cap at terminal velocity
+            if (enemy.vy === undefined) enemy.vy = 0;
+            if (enemy.vx === undefined) enemy.vx = 0;
+            
+            if (enemy.vy < 2) enemy.vy += 0.3; // Gravity
+            
+            enemy.x += enemy.vx;
+            enemy.y += enemy.vy;
+            
+            // Damping x slightly
+            enemy.vx *= 0.98;
+            
+            // Oscillate slightly
+            enemy.x += Math.sin(frameCountRef.current * 0.05) * 0.5;
+
+            // Shoot logic (randomized)
+            if ((frameCountRef.current + shootOffset) % 90 === 0) {
+                Audio.playShoot(false);
+                projectilesRef.current.push({
+                    id: Math.random(),
+                    x: enemy.x,
+                    y: enemy.y + enemy.height / 2,
+                    vx: -ENEMY_BULLET_SPEED,
+                    vy: (player.y - enemy.y) * 0.01,
+                    width: 8,
+                    height: 8,
+                    color: '#fff',
+                    owner: 'ENEMY',
+                    damage: 8
+                });
+            }
+            
+            if (enemy.y > CANVAS_HEIGHT + 50) enemy.hp = 0;
         } else {
+            // Standard Enemies (Scout, Fighter, Destroyer)
             if (enemy.x > targetX) {
                 enemy.x -= 4;
             } else {
@@ -376,8 +457,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                 enemy.y += Math.sin((frameCountRef.current + enemy.id) * 0.05) * 2;
             }
 
-            // Attack Logic
-            if (enemy.state === 'HOVERING' && frameCountRef.current % 120 === 0) { 
+            // Attack Logic (Randomized timing)
+            if (enemy.state === 'HOVERING' && (frameCountRef.current + shootOffset) % 120 === 0) { 
                 if (enemy.type === 'SCOUT') {
                     if (Math.random() > 0.3) {
                         Audio.playShoot(false);
@@ -693,6 +774,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         ctx.shadowColor = ENEMY_STATS[e.type].color;
         ctx.fillStyle = ENEMY_STATS[e.type].color;
         
+        ctx.save();
+        if (e.rotation) {
+             ctx.translate(e.x + e.width/2, e.y + e.height/2);
+             ctx.rotate(e.rotation);
+             ctx.translate(-(e.x + e.width/2), -(e.y + e.height/2));
+        }
+
         if (e.type === 'PILOT') {
             ctx.beginPath();
             ctx.arc(e.x + 10, e.y + 10, 8, 0, Math.PI*2);
@@ -725,7 +813,66 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             ctx.beginPath();
             ctx.arc(e.x + 10, e.y + e.height/2, 5, 0, Math.PI*2);
             ctx.fill();
+        } else if (e.type === 'KAMIKAZE') {
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y);
+            ctx.lineTo(e.x + e.width, e.y + e.height / 2);
+            ctx.lineTo(e.x, e.y + e.height);
+            ctx.lineTo(e.x + 10, e.y + e.height / 2);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Engine flame if not crashing
+            if (e.state !== 'CRASHING') {
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.moveTo(e.x, e.y + 5);
+                ctx.lineTo(e.x - 20 - Math.random() * 10, e.y + e.height / 2);
+                ctx.lineTo(e.x, e.y + e.height - 5);
+                ctx.fill();
+            } else {
+                // Smoke trail if crashing
+                if (Math.random() > 0.5) {
+                    ctx.fillStyle = '#555';
+                    ctx.beginPath();
+                    ctx.arc(e.x - 10, e.y + Math.random() * 20, Math.random() * 10 + 5, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+        } else if (e.type === 'PARATROOPER') {
+            // Parachute
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(e.x + e.width/2, e.y + 10, 15, Math.PI, 0); // Dome
+            ctx.stroke();
+            
+            // Lines
+            ctx.beginPath();
+            ctx.moveTo(e.x + e.width/2 - 15, e.y + 10);
+            ctx.lineTo(e.x + e.width/2, e.y + 25);
+            ctx.moveTo(e.x + e.width/2 + 15, e.y + 10);
+            ctx.lineTo(e.x + e.width/2, e.y + 25);
+            ctx.stroke();
+            
+            // Body
+            ctx.fillStyle = '#00ffaa';
+            ctx.beginPath();
+            ctx.arc(e.x + e.width/2, e.y + 25, 6, 0, Math.PI*2); // Head
+            ctx.fill();
+            
+            ctx.strokeStyle = '#00ffaa';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(e.x + e.width/2, e.y + 25);
+            ctx.lineTo(e.x + e.width/2, e.y + 40); // Body
+            ctx.lineTo(e.x + e.width/2 - 5, e.y + 50); // Leg L
+            ctx.moveTo(e.x + e.width/2, e.y + 40);
+            ctx.lineTo(e.x + e.width/2 + 5, e.y + 50); // Leg R
+            ctx.stroke();
         }
+        
+        ctx.restore();
     });
 
     // PowerUps
@@ -782,17 +929,46 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     // Player
     const player = playerRef.current;
     
-    // Shield Visual
+    // Shield Visual (IMPROVED)
     if (player.shieldTime > 0) {
+        ctx.save();
+        const cx = player.x + player.width/2;
+        const cy = player.y + player.height/2;
+        const radius = Math.max(player.width, player.height);
+        
+        ctx.translate(cx, cy);
+        
+        // Inner Glow
+        const gradient = ctx.createRadialGradient(0, 0, radius * 0.5, 0, 0, radius);
+        gradient.addColorStop(0, 'rgba(0, 255, 255, 0)');
+        gradient.addColorStop(1, 'rgba(0, 255, 255, 0.2)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rotating Rings
+        ctx.rotate(frameCountRef.current * 0.05);
         ctx.strokeStyle = COLORS.neonCyan;
         ctx.lineWidth = 2;
         ctx.shadowBlur = 10;
         ctx.shadowColor = COLORS.neonCyan;
-        ctx.globalAlpha = 0.6 + Math.sin(frameCountRef.current * 0.2) * 0.2;
+        
+        // Outer dashed ring
         ctx.beginPath();
-        ctx.arc(player.x + player.width/2, player.y + player.height/2, player.width, 0, Math.PI*2);
+        ctx.arc(0, 0, radius * 0.9, 0, Math.PI * 2);
+        ctx.setLineDash([15, 10]);
         ctx.stroke();
-        ctx.globalAlpha = 1.0;
+        
+        // Inner solid ring
+        ctx.rotate(-frameCountRef.current * 0.1); // Counter-rotate
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.7, 0, Math.PI * 2);
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.restore();
     }
 
     if (player.invulnerableTime % 4 < 2) { 

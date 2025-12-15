@@ -20,7 +20,7 @@ export interface Player {
   multishotTime: number; // Time remaining for Multishot powerup
 }
 
-export type EnemyType = 'SCOUT' | 'FIGHTER' | 'DESTROYER' | 'PILOT';
+export type EnemyType = 'SCOUT' | 'FIGHTER' | 'DESTROYER' | 'PILOT' | 'KAMIKAZE' | 'PARATROOPER';
 
 export interface Enemy {
   id: number;
@@ -32,8 +32,12 @@ export interface Enemy {
   maxHp: number;
   type: EnemyType;
   lastAttackTime: number;
-  state: 'ENTERING' | 'HOVERING' | 'ATTACKING';
+  state: 'ENTERING' | 'HOVERING' | 'ATTACKING' | 'CRASHING';
   targetY?: number; // For movement smoothing
+  rotation?: number; // For crashing animation
+  vx?: number;
+  vy?: number;
+  shootOffset?: number; // To randomize shooting times
 }
 
 export interface Projectile {
