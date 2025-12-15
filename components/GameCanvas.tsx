@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { GameState, Player, Enemy, Projectile, Particle, Laser, EnemyType, PowerUp } from '../types';
 import { 
   CANVAS_WIDTH, 
   CANVAS_HEIGHT, 
   COLORS, 
-  PLAYER_SPEED,
+  PLAYER_SPEED, 
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
   PLAYER_HP,
@@ -35,6 +35,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
   
   // Input State
   const keysRef = useRef<{ [key: string]: boolean }>({});
+  
+  // Mobile Input State
+  const [isMobile, setIsMobile] = useState(false);
+  const joystickRef = useRef({ x: 0, y: 0, active: false });
+  const fireRef = useRef(false);
+  const [stickOffset, setStickOffset] = useState({ x: 0, y: 0 });
 
   // Game Entities
   const playerRef = useRef<Player>({
@@ -101,6 +107,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
 
   // Input Handlers
   useEffect(() => {
+    // Detect Touch
+    const checkTouch = () => {
+        setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkTouch();
+    window.addEventListener('resize', checkTouch);
+
     const handleKeyDown = (e: KeyboardEvent) => {
       keysRef.current[e.code] = true;
       if (e.code === 'Space' && (gameState === GameState.MENU || gameState === GameState.GAME_OVER)) {
@@ -116,6 +129,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('resize', checkTouch);
     };
   }, [gameState, setGameState]);
 
@@ -128,6 +142,39 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
       Audio.stopBGM();
     }
   }, [gameState, resetGame]);
+
+  // Joystick Logic
+  const handleJoystickMove = (e: React.TouchEvent) => {
+      const touch = e.changedTouches[0];
+      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const maxRadius = rect.width / 2;
+
+      let dx = touch.clientX - centerX;
+      let dy = touch.clientY - centerY;
+      const distance = Math.sqrt(dx*dx + dy*dy);
+
+      // Normalize
+      if (distance > maxRadius) {
+          dx = (dx / distance) * maxRadius;
+          dy = (dy / distance) * maxRadius;
+      }
+
+      setStickOffset({ x: dx, y: dy });
+      
+      // Calculate normalized vector for game input (0-1)
+      joystickRef.current = { 
+          x: dx / maxRadius, 
+          y: dy / maxRadius, 
+          active: true 
+      };
+  };
+
+  const handleJoystickEnd = () => {
+      setStickOffset({ x: 0, y: 0 });
+      joystickRef.current = { x: 0, y: 0, active: false };
+  };
 
   // Helpers
   const spawnEnemy = (type: EnemyType, x: number, y: number) => {
@@ -172,19 +219,27 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
     const player = playerRef.current;
     const now = Date.now();
 
-    // 1. Player Movement (WASD)
+    // 1. Player Movement (WASD + Joystick)
     let dx = 0;
     let dy = 0;
+    
+    // Keyboard
     if (keysRef.current['KeyW'] || keysRef.current['ArrowUp']) dy = -1;
     if (keysRef.current['KeyS'] || keysRef.current['ArrowDown']) dy = 1;
     if (keysRef.current['KeyA'] || keysRef.current['ArrowLeft']) dx = -1;
     if (keysRef.current['KeyD'] || keysRef.current['ArrowRight']) dx = 1;
 
-    // Normalize diagonal
+    // Normalize diagonal for keyboard
     if (dx !== 0 && dy !== 0) {
         const len = Math.sqrt(dx*dx + dy*dy);
         dx /= len;
         dy /= len;
+    }
+
+    // Joystick Override/Addition
+    if (joystickRef.current.active) {
+        dx = joystickRef.current.x;
+        dy = joystickRef.current.y;
     }
 
     player.x += dx * PLAYER_SPEED;
@@ -195,7 +250,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
     player.y = Math.max(0, Math.min(CANVAS_HEIGHT - player.height, player.y));
 
     // Player Shooting
-    if (keysRef.current['Space']) {
+    const isFiring = keysRef.current['Space'] || fireRef.current;
+    if (isFiring) {
         if (now - player.lastShotTime > SHOOT_COOLDOWN) {
             player.lastShotTime = now;
             Audio.playShoot(true);
@@ -680,7 +736,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
   }, [loop]);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-black">
+    <div className="relative w-full h-full flex items-center justify-center bg-black select-none touch-none">
         <canvas
             ref={canvasRef}
             width={CANVAS_WIDTH}
@@ -688,8 +744,39 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
             className="max-w-full max-h-full border-2 border-gray-800 shadow-[0_0_50px_rgba(0,255,255,0.2)]"
         />
         
+        {/* Mobile Controls */}
+        {gameState === GameState.PLAYING && isMobile && (
+            <>
+                {/* Joystick Zone */}
+                <div 
+                    className="absolute bottom-6 left-6 w-36 h-36 rounded-full bg-white/10 border-2 border-white/20 backdrop-blur-sm touch-none flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"
+                    onTouchStart={handleJoystickMove}
+                    onTouchMove={handleJoystickMove}
+                    onTouchEnd={handleJoystickEnd}
+                >
+                    <div 
+                        className="w-12 h-12 rounded-full bg-cyan-500 shadow-[0_0_15px_rgba(0,255,255,0.8)] pointer-events-none transform transition-transform duration-75"
+                        style={{
+                            transform: `translate(${stickOffset.x}px, ${stickOffset.y}px)`
+                        }}
+                    />
+                </div>
+
+                {/* Fire Button */}
+                <div 
+                    className="absolute bottom-8 right-8 w-24 h-24 rounded-full bg-red-500/20 border-2 border-red-500/50 backdrop-blur-sm touch-none flex items-center justify-center active:bg-red-500/60 active:scale-95 transition-all opacity-60 hover:opacity-100"
+                    onTouchStart={(e) => { e.preventDefault(); fireRef.current = true; }}
+                    onTouchEnd={(e) => { e.preventDefault(); fireRef.current = false; }}
+                >
+                    <div className="w-16 h-16 rounded-full bg-red-500/50 shadow-[0_0_15px_rgba(255,0,0,0.5)] flex items-center justify-center">
+                        <span className="font-bold text-white/80 text-sm tracking-wider">FIRE</span>
+                    </div>
+                </div>
+            </>
+        )}
+
         {/* Controls Hint */}
-        {gameState === GameState.PLAYING && (
+        {gameState === GameState.PLAYING && !isMobile && (
             <div className="absolute bottom-4 left-4 text-xs text-cyan-500 font-mono opacity-50 pointer-events-none">
                 WASD: MOVE | SPACE: SHOOT
             </div>
