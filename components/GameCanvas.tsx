@@ -25,9 +25,10 @@ interface GameCanvasProps {
   score: number;
   setScore: (score: React.SetStateAction<number>) => void;
   setHp: (hp: number) => void;
+  isMobile: boolean;
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setScore, setHp }) => {
+const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setScore, setHp, isMobile }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>(0);
   const scoreRef = useRef<number>(0);
@@ -37,7 +38,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
   const keysRef = useRef<{ [key: string]: boolean }>({});
   
   // Mobile Input State
-  const [isMobile, setIsMobile] = useState(false);
   const joystickRef = useRef({ x: 0, y: 0, active: false });
   const fireRef = useRef(false);
   const [stickOffset, setStickOffset] = useState({ x: 0, y: 0 });
@@ -111,13 +111,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
 
   // Input Handlers
   useEffect(() => {
-    // Detect Touch
-    const checkTouch = () => {
-        setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    };
-    checkTouch();
-    window.addEventListener('resize', checkTouch);
-
     const handleKeyDown = (e: KeyboardEvent) => {
       keysRef.current[e.code] = true;
       if (e.code === 'Space' && (gameState === GameState.MENU || gameState === GameState.GAME_OVER)) {
@@ -133,7 +126,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, setGameState, setSco
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('resize', checkTouch);
     };
   }, [gameState, setGameState]);
 

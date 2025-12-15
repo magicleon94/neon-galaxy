@@ -7,9 +7,25 @@ interface UIProps {
   score: number;
   hp?: number; // Optional prop as it's not needed in Menu
   setGameState: (state: GameState) => void;
+  isMobile: boolean;
 }
 
-const UI: React.FC<UIProps> = ({ gameState, score, hp = 100, setGameState }) => {
+const UI: React.FC<UIProps> = ({ gameState, score, hp = 100, setGameState, isMobile }) => {
+  
+  const handleStart = () => {
+    // Attempt to enter fullscreen on start interaction
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch((err) => {
+        console.log(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else if ((elem as any).webkitRequestFullscreen) { /* Safari */
+      (elem as any).webkitRequestFullscreen();
+    }
+    
+    setGameState(GameState.PLAYING);
+  };
+
   // Render Hearts based on HP (20HP = 1 Heart)
   const renderHearts = () => {
     const totalHearts = 5;
@@ -69,17 +85,21 @@ const UI: React.FC<UIProps> = ({ gameState, score, hp = 100, setGameState }) => 
           </h1>
           <p className="text-gray-300 mb-8 font-mono text-sm max-w-md mx-auto">
             SYSTEM ONLINE. PILOT READY.<br/><br/>
-            <span className="text-pink-500">[WASD]</span> MOVE SHIP<br/>
-            <span className="text-green-500">[SPACE]</span> FIRE WEAPONS<br/><br/>
+            {!isMobile && (
+              <>
+                <span className="text-pink-500">[WASD]</span> MOVE SHIP<br/>
+                <span className="text-green-500">[SPACE]</span> FIRE WEAPONS<br/><br/>
+              </>
+            )}
             ELIMINATE ENEMY FLEET. DODGE LASERS.<br/>
             COLLECT <span className="text-pink-500">♥</span> TO RESTORE INTEGRITY.
           </p>
           <div className="animate-bounce">
             <button 
-              onClick={() => setGameState(GameState.PLAYING)}
+              onClick={handleStart}
               className="inline-block px-6 py-2 bg-cyan-600 text-black font-bold text-xl uppercase tracking-widest cursor-pointer hover:bg-cyan-400 focus:outline-none"
             >
-              TAP OR PRESS SPACE TO LAUNCH
+              {isMobile ? "TAP TO LAUNCH" : "TAP OR PRESS SPACE TO LAUNCH"}
             </button>
           </div>
         </div>
@@ -99,10 +119,10 @@ const UI: React.FC<UIProps> = ({ gameState, score, hp = 100, setGameState }) => 
             <p className="text-5xl font-mono text-white">{Math.floor(score).toString().padStart(6, '0')}</p>
           </div>
           <button 
-            onClick={() => setGameState(GameState.PLAYING)}
+            onClick={handleStart}
             className="inline-block px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-black font-bold text-xl uppercase tracking-widest cursor-pointer transition-colors focus:outline-none"
           >
-            TAP OR PRESS SPACE TO RETRY
+             {isMobile ? "TAP TO RETRY" : "TAP OR PRESS SPACE TO RETRY"}
           </button>
         </div>
       </div>
