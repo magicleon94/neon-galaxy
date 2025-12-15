@@ -1,6 +1,6 @@
 import React from 'react';
 import { GameState } from '../types';
-import { COLORS } from '../constants';
+import { COLORS, PLAYER_HP } from '../constants';
 
 interface UIProps {
   gameState: GameState;
@@ -16,7 +16,7 @@ interface UIProps {
 const UI: React.FC<UIProps> = ({ 
   gameState, 
   score, 
-  hp = 100, 
+  hp = PLAYER_HP, 
   shieldTime = 0, 
   multishotTime = 0, 
   setGameState, 
@@ -61,25 +61,23 @@ const UI: React.FC<UIProps> = ({
     }
   };
 
-  const renderHearts = () => {
-    const totalHearts = 5;
-    const currentHearts = Math.ceil(hp / 20);
-    const hearts = [];
+  const renderHealthBar = () => {
+    const pct = Math.max(0, Math.min(100, (hp / PLAYER_HP) * 100));
     
-    for (let i = 0; i < totalHearts; i++) {
-        hearts.push(
-            <span 
-                key={i} 
-                className="text-2xl mr-1 drop-shadow-[0_0_5px_rgba(255,0,255,0.8)]"
-                style={{ 
-                    color: i < currentHearts ? COLORS.neonPink : '#333' 
-                }}
-            >
-                ♥
-            </span>
-        );
-    }
-    return hearts;
+    return (
+        <div className="w-56">
+            <div className="flex justify-between items-end mb-1">
+                <span className="text-pink-500 text-xs tracking-[0.2em] font-bold">SYSTEM INTEGRITY</span>
+                <span className="text-pink-500 text-xs font-mono drop-shadow-[0_0_5px_rgba(255,0,255,0.8)]">{Math.ceil(hp)}/{PLAYER_HP}</span>
+            </div>
+            <div className="w-full h-4 border border-pink-500/50 bg-gray-900/50 skew-x-[-15deg] p-0.5 backdrop-blur-sm">
+                <div 
+                    className="h-full bg-gradient-to-r from-pink-600 to-pink-400 shadow-[0_0_10px_rgba(255,0,255,0.6)] transition-all duration-100 ease-linear"
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
+        </div>
+    );
   };
 
   if (gameState === GameState.PLAYING) {
@@ -87,10 +85,7 @@ const UI: React.FC<UIProps> = ({
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none p-6 flex justify-between items-start">
         {/* Health */}
         <div className="flex flex-col">
-            <span className="text-pink-500 text-xs tracking-widest mb-1">SYSTEM INTEGRITY</span>
-            <div className="flex">
-                {renderHearts()}
-            </div>
+            {renderHealthBar()}
         </div>
 
         {/* Right HUD: Score & Powerups */}
