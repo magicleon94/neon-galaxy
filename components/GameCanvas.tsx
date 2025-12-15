@@ -289,8 +289,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     }
 
     if (joystickRef.current.active) {
-        dx = joystickRef.current.x;
-        dy = joystickRef.current.y;
+        // Multiplier to make mobile movement feel snappier/follow drag better
+        dx = joystickRef.current.x * 2.0; 
+        dy = joystickRef.current.y * 2.0;
     }
 
     player.x += dx * PLAYER_SPEED;
@@ -1061,7 +1062,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         {gameState === GameState.PLAYING && isMobile && (
             <>
                 <div 
-                    className="absolute bottom-6 left-6 w-36 h-36 rounded-full bg-white/10 border-2 border-white/20 backdrop-blur-sm touch-none flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"
+                    className="absolute bottom-6 left-6 w-36 h-36 rounded-full bg-white/5 border-2 border-white/10 backdrop-blur-sm touch-none flex items-center justify-center opacity-30 active:opacity-60 transition-opacity"
                     onTouchStart={handleJoystickMove}
                     onTouchMove={handleJoystickMove}
                     onTouchEnd={handleJoystickEnd}
@@ -1075,7 +1076,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                 </div>
 
                 <div 
-                    className="absolute bottom-8 right-8 w-24 h-24 rounded-full bg-red-500/20 border-2 border-red-500/50 backdrop-blur-sm touch-none flex items-center justify-center active:bg-red-500/60 active:scale-95 transition-all opacity-60 hover:opacity-100"
+                    className="absolute bottom-8 right-8 w-24 h-24 rounded-full bg-red-500/10 border-2 border-red-500/20 backdrop-blur-sm touch-none flex items-center justify-center active:bg-red-500/30 active:scale-95 transition-all opacity-30 active:opacity-60"
                     onTouchStart={(e) => { e.preventDefault(); fireRef.current = true; }}
                     onTouchEnd={(e) => { e.preventDefault(); fireRef.current = false; }}
                 >

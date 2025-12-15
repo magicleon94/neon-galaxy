@@ -60,6 +60,9 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ isIOS, deferredPrompt }) 
           </div>
         ) : (
           <div className="space-y-4">
+            <p className="text-gray-400 text-xs font-mono mb-2">
+               RECOMMENDED: USE <strong className="text-white">GOOGLE CHROME</strong> ON ANDROID
+            </p>
             {deferredPrompt ? (
               <button
                 onClick={handleInstallClick}
@@ -71,7 +74,7 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ isIOS, deferredPrompt }) 
               <div className="text-left bg-gray-900/80 p-4 rounded border border-yellow-700/50">
                 <p className="text-yellow-500 mb-2 text-xs uppercase tracking-widest font-bold">Manual Override:</p>
                 <p className="text-gray-300 text-sm font-mono">
-                  Tap your browser menu (⋮) and select <strong className="text-white">Install App</strong> or <strong className="text-white">Add to Home Screen</strong>.
+                  Ensure you are using <strong className="text-white">Google Chrome</strong>. Tap the menu (⋮) and select <strong className="text-white">Install App</strong> or <strong className="text-white">Add to Home Screen</strong>.
                 </p>
               </div>
             )}
