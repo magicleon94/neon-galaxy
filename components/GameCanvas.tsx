@@ -50,6 +50,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const requestRef = useRef<number>(0);
   const scoreRef = useRef<number>(0);
   const frameCountRef = useRef<number>(0);
+  const takeScreenshotRef = useRef<boolean>(false);
   
   // Input State
   const keysRef = useRef<{ [key: string]: boolean }>({});
@@ -127,6 +128,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     frameCountRef.current = 0;
     shakeRef.current = 0;
     flashRef.current = 0;
+    takeScreenshotRef.current = false;
     setScore(0);
     setHp(PLAYER_HP);
     setShieldTime(0);
@@ -694,11 +696,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
     if (player.hp <= 0) {
         setHp(0);
-        // Only take screenshot on mobile for sharing
-        if (isMobile && canvasRef.current) {
-            canvasRef.current.toBlob(blob => {
-                if (blob) setScreenshot(blob);
-            });
+        // Only trigger screenshot logic once
+        if (isMobile && canvasRef.current && !takeScreenshotRef.current) {
+            takeScreenshotRef.current = true;
         }
         setGameState(GameState.GAME_OVER);
     }
@@ -1006,6 +1006,31 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     if (flashRef.current > 0) {
         ctx.fillStyle = `rgba(255, 255, 255, ${flashRef.current})`;
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    }
+
+    // Screenshot Overlay Draw
+    if (takeScreenshotRef.current && isMobile) {
+        ctx.save();
+        // Score
+        ctx.fillStyle = COLORS.neonYellow;
+        ctx.font = 'bold italic 40px Orbitron';
+        ctx.textAlign = 'right';
+        ctx.shadowColor = COLORS.neonPink;
+        ctx.shadowBlur = 10;
+        ctx.fillText(`SCORE: ${Math.floor(scoreRef.current)}`, CANVAS_WIDTH - 30, 60);
+        
+        // Status
+        ctx.fillStyle = COLORS.neonRed;
+        ctx.font = 'bold 60px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText('M.I.A.', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+        ctx.restore();
+
+        // Capture
+        canvas.toBlob(blob => {
+            if (blob) setScreenshot(blob);
+        });
+        takeScreenshotRef.current = false;
     }
 
   }, []);
